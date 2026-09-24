@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { CAT_ICON, CAT_BG, fmt, costPerUnit } from '../utils/calc.js'
+import { getCategory, fmt, costPerUnit } from '../utils/calc.js'
 import ListControls from './ListControls.jsx'
 import Pager from './Pager.jsx'
 
@@ -13,7 +13,7 @@ const SORT_OPTIONS = [
   { value: 'cost_asc', label: 'Вартість: зростання' }
 ]
 
-export default function ItemsList({ items, onEdit, onDelete }) {
+export default function ItemsList({ items, categories, onEdit, onDelete }) {
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState('date_new')
   const [page, setPage] = useState(1)
@@ -59,10 +59,12 @@ export default function ItemsList({ items, onEdit, onDelete }) {
       />
       <div className="panel">
         {pageItems.length === 0 && <div className="empty">Нічого не знайдено за запитом «{search}».</div>}
-        {pageItems.map((it) => (
+        {pageItems.map((it) => {
+          const cat = getCategory(categories, it.category)
+          return (
           <div className="row" key={it.id}>
-            <div className="badge" style={{ background: it.img ? 'transparent' : CAT_BG[it.category] || CAT_BG.other }}>
-              {it.img ? <img src={it.img} alt="" /> : CAT_ICON[it.category] || '📦'}
+            <div className="badge" style={{ background: it.img ? 'transparent' : cat.color }}>
+              {it.img ? <img src={it.img} alt="" /> : cat.icon}
             </div>
             <div className="row-main">
               <div className="row-title">{it.name}</div>
@@ -74,7 +76,8 @@ export default function ItemsList({ items, onEdit, onDelete }) {
               <button className="icon-btn" type="button" onClick={() => onDelete(it.id)}>✕</button>
             </div>
           </div>
-        ))}
+          )
+        })}
       </div>
       <Pager page={page} pageCount={pageCount} onPage={setPage} />
     </>

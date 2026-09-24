@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { fmt, costPerUnit } from '../utils/calc.js'
 import ItemPicker from './ItemPicker.jsx'
 
-export default function KitSheet({ open, kit, items, onSave, onClose }) {
+export default function KitSheet({ open, kit, items, categories, onSave, onClose }) {
   const [name, setName] = useState('')
   const [img, setImg] = useState('')
   const [components, setComponents] = useState([])
@@ -116,6 +116,7 @@ export default function KitSheet({ open, kit, items, onSave, onClose }) {
       <ItemPicker
         open={pickerForIndex !== null}
         items={items}
+        categories={categories}
         onSelect={pickItem}
         onClose={() => setPickerForIndex(null)}
       />
