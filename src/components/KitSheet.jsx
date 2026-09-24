@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { fmt, costPerUnit } from '../utils/calc.js'
+import ItemPicker from './ItemPicker.jsx'
 
 export default function KitSheet({ open, kit, items, onSave, onClose }) {
   const [name, setName] = useState('')
   const [img, setImg] = useState('')
   const [components, setComponents] = useState([])
+  const [pickerForIndex, setPickerForIndex] = useState(null)
 
   useEffect(() => {
     if (open) {
@@ -36,7 +38,13 @@ export default function KitSheet({ open, kit, items, onSave, onClose }) {
       alert('Спочатку додайте товари на склад')
       return
     }
+    const newIdx = components.length
     setComponents((rows) => [...rows, { itemId: items[0].id, qty: '' }])
+    setPickerForIndex(newIdx)
+  }
+  function pickItem(itemId) {
+    updateComponent(pickerForIndex, 'itemId', itemId)
+    setPickerForIndex(null)
   }
 
   function handleFile(e) {
@@ -76,21 +84,22 @@ export default function KitSheet({ open, kit, items, onSave, onClose }) {
 
         <label>Компоненти</label>
         {!items.length && <div className="row-sub">Спочатку додайте товари на склад.</div>}
-        {components.map((c, idx) => (
-          <div className="comp-row" key={idx}>
-            <select value={c.itemId} onChange={(e) => updateComponent(idx, 'itemId', e.target.value)}>
-              {items.map((it) => (
-                <option key={it.id} value={it.id}>{it.name}</option>
-              ))}
-            </select>
-            <input
-              type="number" min="0" step="0.01" placeholder="к-сть"
-              value={c.qty}
-              onChange={(e) => updateComponent(idx, 'qty', e.target.value)}
-            />
-            <button className="icon-btn" type="button" onClick={() => removeComponent(idx)}>✕</button>
-          </div>
-        ))}
+        {components.map((c, idx) => {
+          const it = items.find((i) => i.id === c.itemId)
+          return (
+            <div className="comp-row" key={idx}>
+              <button type="button" className="comp-picker-btn" onClick={() => setPickerForIndex(idx)}>
+                {it ? it.name : 'Оберіть товар'} <span className="chevron">▾</span>
+              </button>
+              <input
+                type="number" min="0" step="0.01" placeholder="к-сть"
+                value={c.qty}
+                onChange={(e) => updateComponent(idx, 'qty', e.target.value)}
+              />
+              <button className="icon-btn" type="button" onClick={() => removeComponent(idx)}>✕</button>
+            </div>
+          )
+        })}
         <button className="link-btn" type="button" onClick={addComponent}>+ Додати компонент</button>
 
         <div className="total-line">
@@ -103,6 +112,13 @@ export default function KitSheet({ open, kit, items, onSave, onClose }) {
           <button className="btn primary" type="button" onClick={save}>Зберегти</button>
         </div>
       </div>
+
+      <ItemPicker
+        open={pickerForIndex !== null}
+        items={items}
+        onSelect={pickItem}
+        onClose={() => setPickerForIndex(null)}
+      />
     </div>
   )
 }
