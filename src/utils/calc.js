@@ -25,3 +25,14 @@ export function kitCost(kit, items) {
     return sum + (item ? costPerUnit(item) * c.qty : 0)
   }, 0)
 }
+
+export function toUSD(uah, rate) {
+  return rate > 0 ? uah / rate : null
+}
+
+export function fmtUSD(n) {
+  return '$' + (Math.round((n || 0) * 100) / 100).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
+}
