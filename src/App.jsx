@@ -1,0 +1,71 @@
+import { useState } from 'react'
+import Header from './components/Header.jsx'
+import Tabs from './components/Tabs.jsx'
+import ItemsList from './components/ItemsList.jsx'
+import KitsList from './components/KitsList.jsx'
+import ItemSheet from './components/ItemSheet.jsx'
+import KitSheet from './components/KitSheet.jsx'
+import { usePersistedState, newId } from './utils/storage.js'
+
+export default function App() {
+  const [items, setItems] = usePersistedState('beads_items', [])
+  const [kits, setKits] = usePersistedState('beads_kits', [])
+  const [tab, setTab] = useState('items')
+
+  const [itemSheetOpen, setItemSheetOpen] = useState(false)
+  const [editingItemId, setEditingItemId] = useState(null)
+
+  const [kitSheetOpen, setKitSheetOpen] = useState(false)
+  const [editingKitId, setEditingKitId] = useState(null)
+
+  const editingItem = items.find((i) => i.id === editingItemId) || null
+  const editingKit = kits.find((k) => k.id === editingKitId) || null
+
+  function openNewItem() { setEditingItemId(null); setItemSheetOpen(true) }
+  function openEditItem(id) { setEditingItemId(id); setItemSheetOpen(true) }
+  function saveItem(data) {
+    if (data.id) {
+      setItems((all) => all.map((i) => (i.id === data.id ? data : i)))
+    } else {
+      setItems((all) => [...all, { ...data, id: newId('it') }])
+    }
+    setItemSheetOpen(false)
+  }
+  function deleteItem(id) {
+    if (confirm('Видалити товар зі складу?')) {
+      setItems((all) => all.filter((i) => i.id !== id))
+    }
+  }
+
+  function openNewKit() { setEditingKitId(null); setKitSheetOpen(true) }
+  function openEditKit(id) { setEditingKitId(id); setKitSheetOpen(true) }
+  function saveKit(data) {
+    if (data.id) {
+      setKits((all) => all.map((k) => (k.id === data.id ? data : k)))
+    } else {
+      setKits((all) => [...all, { ...data, id: newId('kit') }])
+    }
+    setKitSheetOpen(false)
+  }
+  function deleteKit(id) {
+    if (confirm('Видалити набір?')) {
+      setKits((all) => all.filter((k) => k.id !== id))
+    }
+  }
+
+  return (
+    <div className="app">
+      <Header />
+      <Tabs active={tab} onChange={setTab} />
+
+      {tab === 'items'
+        ? <ItemsList items={items} onEdit={openEditItem} onDelete={deleteItem} />
+        : <KitsList kits={kits} items={items} onEdit={openEditKit} onDelete={deleteKit} />}
+
+      <button className="fab" type="button" onClick={tab === 'items' ? openNewItem : openNewKit}>+</button>
+
+      <ItemSheet open={itemSheetOpen} item={editingItem} onSave={saveItem} onClose={() => setItemSheetOpen(false)} />
+      <KitSheet open={kitSheetOpen} kit={editingKit} items={items} onSave={saveKit} onClose={() => setKitSheetOpen(false)} />
+    </div>
+  )
+}
