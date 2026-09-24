@@ -7,11 +7,13 @@ import ItemSheet from './components/ItemSheet.jsx'
 import KitSheet from './components/KitSheet.jsx'
 import SettingsSheet from './components/SettingsSheet.jsx'
 import { usePersistedState, newId } from './utils/storage.js'
+import { DEFAULT_CATEGORIES } from './utils/categories.js'
 
 export default function App() {
   const [items, setItems] = usePersistedState('beads_items', [])
   const [kits, setKits] = usePersistedState('beads_kits', [])
   const [rate, setRate] = usePersistedState('beads_usd_rate', 0)
+  const [categories, setCategories] = usePersistedState('beads_categories', DEFAULT_CATEGORIES)
   const [tab, setTab] = useState('items')
 
   const [itemSheetOpen, setItemSheetOpen] = useState(false)
@@ -63,14 +65,18 @@ export default function App() {
       <Tabs active={tab} onChange={setTab} />
 
       {tab === 'items'
-        ? <ItemsList items={items} onEdit={openEditItem} onDelete={deleteItem} />
+        ? <ItemsList items={items} categories={categories} onEdit={openEditItem} onDelete={deleteItem} />
         : <KitsList kits={kits} items={items} rate={rate} onEdit={openEditKit} onDelete={deleteKit} />}
 
       <button className="fab" type="button" onClick={tab === 'items' ? openNewItem : openNewKit}>+</button>
 
-      <ItemSheet open={itemSheetOpen} item={editingItem} onSave={saveItem} onClose={() => setItemSheetOpen(false)} />
-      <KitSheet open={kitSheetOpen} kit={editingKit} items={items} onSave={saveKit} onClose={() => setKitSheetOpen(false)} />
-      <SettingsSheet open={settingsOpen} rate={rate} onSave={setRate} onClose={() => setSettingsOpen(false)} />
+      <ItemSheet open={itemSheetOpen} item={editingItem} categories={categories} onSave={saveItem} onClose={() => setItemSheetOpen(false)} />
+      <KitSheet open={kitSheetOpen} kit={editingKit} items={items} categories={categories} onSave={saveKit} onClose={() => setKitSheetOpen(false)} />
+      <SettingsSheet
+        open={settingsOpen} rate={rate} onSaveRate={setRate}
+        categories={categories} onChangeCategories={setCategories}
+        onClose={() => setSettingsOpen(false)}
+      />
     </div>
   )
 }
