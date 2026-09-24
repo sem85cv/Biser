@@ -1,11 +1,7 @@
-export const CAT_ICON = { bead: '📿', thread: '🧵', findings: '🔗', needle: '🪡', other: '📦' }
-export const CAT_LABEL = { bead: 'Бісер', thread: 'Нитка', findings: 'Фурнітура', needle: 'Голка', other: 'Інше' }
-export const CAT_BG = {
-  bead: 'var(--bead-bg)',
-  thread: 'var(--thread-bg)',
-  findings: 'var(--find-bg)',
-  needle: 'var(--needle-bg)',
-  other: 'var(--other-bg)'
+const FALLBACK_CATEGORY = { id: 'other', label: 'Інше', icon: '📦', color: '#ECEAF6' }
+
+export function getCategory(categories, id) {
+  return (categories || []).find((c) => c.id === id) || FALLBACK_CATEGORY
 }
 
 export function fmt(n) {
