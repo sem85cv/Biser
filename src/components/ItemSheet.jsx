@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { getCategory } from '../utils/calc.js'
+import { uploadImage } from '../utils/upload.js'
 
 const emptyForm = { name: '', category: '', unit: 'г', qty: '', cost: '', img: '' }
 
 export default function ItemSheet({ open, item, categories, onSave, onClose }) {
   const [form, setForm] = useState(emptyForm)
   const [costMode, setCostMode] = useState('total') // 'total' | 'unit'
+  const [uploading, setUploading] = useState(false)
   const fileRef = useRef(null)
 
   useEffect(() => {
@@ -36,9 +38,11 @@ export default function ItemSheet({ open, item, categories, onSave, onClose }) {
   function handleFile(e) {
     const file = e.target.files[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => set('img', reader.result)
-    reader.readAsDataURL(file)
+    setUploading(true)
+    uploadImage(file, 'items')
+      .then((url) => set('img', url))
+      .catch((err) => alert('Не вдалося завантажити фото: ' + err.message))
+      .finally(() => setUploading(false))
   }
 
   function save() {
@@ -64,10 +68,10 @@ export default function ItemSheet({ open, item, categories, onSave, onClose }) {
 
         <div className="img-pick">
           <label className="badge badge-pick" style={{ background: form.img ? 'transparent' : getCategory(categories, form.category).color }}>
-            {form.img ? <img src={form.img} alt="" /> : getCategory(categories, form.category).icon}
+            {uploading ? '…' : (form.img ? <img src={form.img} alt="" /> : getCategory(categories, form.category).icon)}
             <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} style={{ display: 'none' }} />
           </label>
-          <span style={{ fontSize: 13, color: 'var(--muted)' }}>Іконка товару (необов'язково)</span>
+          <span style={{ fontSize: 13, color: 'var(--muted)' }}>{uploading ? 'Завантаження…' : "Іконка товару (необов'язково)"}</span>
         </div>
 
         <label>Назва</label>

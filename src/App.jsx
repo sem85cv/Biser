@@ -6,14 +6,17 @@ import KitsList from './components/KitsList.jsx'
 import ItemSheet from './components/ItemSheet.jsx'
 import KitSheet from './components/KitSheet.jsx'
 import SettingsSheet from './components/SettingsSheet.jsx'
-import { usePersistedState, newId } from './utils/storage.js'
-import { DEFAULT_CATEGORIES } from './utils/categories.js'
+import Login from './components/Login.jsx'
+import { useAuth } from './hooks/useAuth.js'
+import { useFirestoreCollection } from './hooks/useFirestoreCollection.js'
+import { useSettingsDoc } from './hooks/useSettingsDoc.js'
 
 export default function App() {
-  const [items, setItems] = usePersistedState('beads_items', [])
-  const [kits, setKits] = usePersistedState('beads_kits', [])
-  const [rate, setRate] = usePersistedState('beads_usd_rate', 0)
-  const [categories, setCategories] = usePersistedState('beads_categories', DEFAULT_CATEGORIES)
+  const { user, loading: authLoading, signIn, signOut } = useAuth()
+  const { docs: items, add: addItem, update: updateItem, remove: removeItem, error: itemsError } = useFirestoreCollection('items')
+  const { docs: kits, add: addKit, update: updateKit, remove: removeKit } = useFirestoreCollection('kits')
+  const { categories, rate, save: saveSettings } = useSettingsDoc()
+
   const [tab, setTab] = useState('items')
 
   const [itemSheetOpen, setItemSheetOpen] = useState(false)
@@ -27,41 +30,57 @@ export default function App() {
   const editingItem = items.find((i) => i.id === editingItemId) || null
   const editingKit = kits.find((k) => k.id === editingKitId) || null
 
+  if (authLoading) {
+    return <div className="center-screen">Завантаження…</div>
+  }
+  if (!user) {
+    return <Login onSignIn={signIn} />
+  }
+  if (itemsError && itemsError.code === 'permission-denied') {
+    return (
+      <div className="center-screen">
+        <p>У вас немає доступу до цього складу.<br />Зверніться до власника, щоб додав ваш акаунт у список дозволених.</p>
+        <button className="btn ghost" type="button" onClick={signOut}>Вийти й спробувати інший акаунт</button>
+      </div>
+    )
+  }
+
   function openNewItem() { setEditingItemId(null); setItemSheetOpen(true) }
   function openEditItem(id) { setEditingItemId(id); setItemSheetOpen(true) }
   function saveItem(data) {
-    if (data.id) {
-      setItems((all) => all.map((i) => (i.id === data.id ? { ...i, ...data } : i)))
+    const { id, ...rest } = data
+    if (id) {
+      updateItem(id, rest)
     } else {
-      setItems((all) => [...all, { ...data, id: newId('it'), createdAt: Date.now() }])
+      addItem({ ...rest, createdAt: Date.now() })
     }
     setItemSheetOpen(false)
   }
   function deleteItem(id) {
-    if (confirm('Видалити товар зі складу?')) {
-      setItems((all) => all.filter((i) => i.id !== id))
-    }
+    if (confirm('Видалити товар зі складу?')) removeItem(id)
   }
 
   function openNewKit() { setEditingKitId(null); setKitSheetOpen(true) }
   function openEditKit(id) { setEditingKitId(id); setKitSheetOpen(true) }
   function saveKit(data) {
-    if (data.id) {
-      setKits((all) => all.map((k) => (k.id === data.id ? { ...k, ...data } : k)))
+    const { id, ...rest } = data
+    if (id) {
+      updateKit(id, rest)
     } else {
-      setKits((all) => [...all, { ...data, id: newId('kit'), createdAt: Date.now() }])
+      addKit({ ...rest, createdAt: Date.now() })
     }
     setKitSheetOpen(false)
   }
   function deleteKit(id) {
-    if (confirm('Видалити набір?')) {
-      setKits((all) => all.filter((k) => k.id !== id))
-    }
+    if (confirm('Видалити набір?')) removeKit(id)
   }
+
+  function saveCategories(newCategories) { saveSettings({ categories: newCategories }) }
+  function saveRate(newRate) { saveSettings({ rate: newRate }) }
 
   return (
     <div className="app">
-      <Header onSettings={() => setSettingsOpen(true)} />
+      <Header user={user} onSettings={() => setSettingsOpen(true)} onSignOut={signOut} />
       <Tabs active={tab} onChange={setTab} />
 
       {tab === 'items'
@@ -71,10 +90,10 @@ export default function App() {
       <button className="fab" type="button" onClick={tab === 'items' ? openNewItem : openNewKit}>+</button>
 
       <ItemSheet open={itemSheetOpen} item={editingItem} categories={categories} onSave={saveItem} onClose={() => setItemSheetOpen(false)} />
-      <KitSheet open={kitSheetOpen} kit={editingKit} items={items} categories={categories} onSave={saveKit} onClose={() => setKitSheetOpen(false)} />
+      <KitSheet open={kitSheetOpen} kit={editingKit} items={items} categories={categories} rate={rate} onSave={saveKit} onClose={() => setKitSheetOpen(false)} />
       <SettingsSheet
-        open={settingsOpen} rate={rate} onSaveRate={setRate}
-        categories={categories} onChangeCategories={setCategories}
+        open={settingsOpen} rate={rate} onSaveRate={saveRate}
+        categories={categories} onChangeCategories={saveCategories}
         onClose={() => setSettingsOpen(false)}
       />
     </div>

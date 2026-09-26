@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
-import { fmt, costPerUnit } from '../utils/calc.js'
+import { fmt, fmtUSD, costPerUnit, toUSD } from '../utils/calc.js'
+import { uploadImage } from '../utils/upload.js'
 import ItemPicker from './ItemPicker.jsx'
 
-export default function KitSheet({ open, kit, items, categories, onSave, onClose }) {
+export default function KitSheet({ open, kit, items, categories, rate, onSave, onClose }) {
   const [name, setName] = useState('')
   const [img, setImg] = useState('')
+  const [uploading, setUploading] = useState(false)
   const [components, setComponents] = useState([])
   const [pickerForIndex, setPickerForIndex] = useState(null)
 
@@ -50,9 +52,11 @@ export default function KitSheet({ open, kit, items, categories, onSave, onClose
   function handleFile(e) {
     const file = e.target.files[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => setImg(reader.result)
-    reader.readAsDataURL(file)
+    setUploading(true)
+    uploadImage(file, 'kits')
+      .then((url) => setImg(url))
+      .catch((err) => alert('Не вдалося завантажити фото: ' + err.message))
+      .finally(() => setUploading(false))
   }
 
   function save() {
@@ -73,10 +77,10 @@ export default function KitSheet({ open, kit, items, categories, onSave, onClose
 
         <div className="img-pick">
           <label className="badge badge-pick">
-            {img ? <img src={img} alt="" /> : '🎁'}
+            {uploading ? '…' : (img ? <img src={img} alt="" /> : '🎁')}
             <input type="file" accept="image/*" onChange={handleFile} style={{ display: 'none' }} />
           </label>
-          <span style={{ fontSize: 13, color: 'var(--muted)' }}>Фото набору (необов'язково)</span>
+          <span style={{ fontSize: 13, color: 'var(--muted)' }}>{uploading ? 'Завантаження…' : "Фото набору (необов'язково)"}</span>
         </div>
 
         <label>Назва набору</label>
@@ -104,7 +108,10 @@ export default function KitSheet({ open, kit, items, categories, onSave, onClose
 
         <div className="total-line">
           <span>Собівартість набору</span>
-          <b>{fmt(total)} грн</b>
+          <div style={{ textAlign: 'right' }}>
+            <b>{fmt(total)} грн</b>
+            <div className="row-sub">{toUSD(total, rate) !== null ? fmtUSD(toUSD(total, rate)) : 'встановіть курс у ⚙'}</div>
+          </div>
         </div>
 
         <div className="btn-row">
