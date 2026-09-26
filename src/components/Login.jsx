@@ -1,11 +1,9 @@
-export default function Login({ onSignIn }) {
+export default function Login({ onSignIn, error }) {
   async function handleClick() {
     try {
       await onSignIn()
     } catch (err) {
-      if (err.code !== 'auth/popup-closed-by-user') {
-        alert('Не вдалося увійти: ' + err.message)
-      }
+      alert('Не вдалося увійти: ' + err.message)
     }
   }
 
@@ -24,6 +22,11 @@ export default function Login({ onSignIn }) {
         <button className="btn primary" type="button" style={{ width: '100%' }} onClick={handleClick}>
           Увійти через Google
         </button>
+        {error && (
+          <p style={{ marginTop: 14, fontSize: 12.5, color: 'var(--pink2)' }}>
+            Помилка входу: {error.message}
+          </p>
+        )}
       </div>
     </div>
   )

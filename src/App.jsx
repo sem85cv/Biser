@@ -12,7 +12,7 @@ import { useFirestoreCollection } from './hooks/useFirestoreCollection.js'
 import { useSettingsDoc } from './hooks/useSettingsDoc.js'
 
 export default function App() {
-  const { user, loading: authLoading, signIn, signOut } = useAuth()
+  const { user, loading: authLoading, error: authError, signIn, signOut } = useAuth()
   const { docs: items, add: addItem, update: updateItem, remove: removeItem, error: itemsError } = useFirestoreCollection('items')
   const { docs: kits, add: addKit, update: updateKit, remove: removeKit } = useFirestoreCollection('kits')
   const { categories, rate, save: saveSettings } = useSettingsDoc()
@@ -34,7 +34,7 @@ export default function App() {
     return <div className="center-screen">Завантаження…</div>
   }
   if (!user) {
-    return <Login onSignIn={signIn} />
+    return <Login onSignIn={signIn} error={authError} />
   }
   if (itemsError && itemsError.code === 'permission-denied') {
     return (
