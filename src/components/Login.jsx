@@ -3,6 +3,13 @@ export default function Login({ onSignIn, error }) {
     try {
       await onSignIn()
     } catch (err) {
+      if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+        return
+      }
+      if (err.code === 'auth/popup-blocked') {
+        alert('Браузер заблокував спливаюче вікно. Дозвольте спливаючі вікна для цього сайту й спробуйте ще раз.')
+        return
+      }
       alert('Не вдалося увійти: ' + err.message)
     }
   }

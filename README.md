@@ -89,7 +89,60 @@ service firebase.storage {
 `beadsinventory.netlify.app`), його треба додати в список дозволених доменів
 для входу: **Authentication → Settings → Authorized domains → Add domain**.
 
-## Запуск
+## Деплой на Firebase Hosting (рекомендовано замість Netlify)
+
+Хостинг на Firebase має домен того ж "сімейства", що й `authDomain` — це усуває
+проблеми входу через Google, пов'язані з ізоляцією сховища між різними доменами.
+Налаштовується один раз, повністю з телефону, через GitHub Actions.
+
+**Крок 1. Секрети в GitHub**
+
+У репозиторії на GitHub: **Settings → Secrets and variables → Actions → New
+repository secret**. Додайте 6 секретів з тими самими назвами й значеннями, що
+й у `.env` / Netlify:
+
+```
+VITE_FIREBASE_API_KEY
+VITE_FIREBASE_AUTH_DOMAIN
+VITE_FIREBASE_PROJECT_ID
+VITE_FIREBASE_STORAGE_BUCKET
+VITE_FIREBASE_MESSAGING_SENDER_ID
+VITE_FIREBASE_APP_ID
+```
+
+**Крок 2. Ключ сервісного акаунту**
+
+У консолі Firebase: **Project settings → Service accounts** → кнопка
+**"Generate new private key"** → підтвердіть → завантажиться `.json` файл.
+Відкрийте цей файл (на телефоні — через "Файли" або браузер), виділіть і
+скопіюйте геть увесь його вміст.
+
+Додайте ще один секрет у GitHub з назвою **FIREBASE_SERVICE_ACCOUNT** і
+значенням — усім вмістом цього json-файлу (вставте як є, це один довгий текст).
+
+**Крок 3. Увімкнути Hosting у Firebase**
+
+У консолі Firebase: **Build → Hosting → Get started** → можна пропустити всі
+кроки з встановленням CLI (вони не потрібні — це зробить GitHub Actions) →
+просто дійдіть до кінця майстра, щоб Hosting значився як увімкнений для проєкту.
+
+**Крок 4. Готово**
+
+Файли `firebase.json`, `.firebaserc` і `.github/workflows/firebase-hosting-deploy.yml`
+вже є в цьому репозиторії. Після додавання секретів (кроки 1-2) наступний
+`git push`/коміт у гілку `main` автоматично запустить збірку й викладе сайт на:
+
+```
+https://beadsinventory-d73f2.web.app
+```
+
+Прогрес збірки видно в репозиторії на GitHub у вкладці **Actions**. Домен
+`.web.app` вже автоматично в списку дозволених для входу через Google (Firebase
+додає його сам) — окремо дозволяти не потрібно.
+
+Netlify можна лишити паралельно (не заважає) або згодом відключити — на ваш розсуд.
+
+## Запуск локально
 
 Потрібен встановлений Node.js (18+).
 
@@ -97,6 +150,14 @@ service firebase.storage {
 npm install
 npm run dev
 ```
+
+## Деплой на Netlify (альтернатива)
+
+Якщо волієте Netlify — просто підключіть репозиторій як раніше (Build command:
+`npm run build`, Publish directory: `dist`) і додайте ті самі 6 змінних
+`VITE_FIREBASE_...` в Site configuration → Environment variables. Але майте на
+увазі нюанс з доменами, описаний вище (Крок 3) — можливі проблеми входу через
+Google через ізоляцію сховища між доменами.
 
 ## Встановлення як застосунок (PWA)
 
