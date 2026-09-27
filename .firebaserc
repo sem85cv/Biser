@@ -1,5 +1,12 @@
 {
   "projects": {
     "default": "beadsinventory-d73f2"
+  },
+  "targets": {
+    "beadsinventory-d73f2": {
+      "hosting": {
+        "main": ["beadsinventory"]
+      }
+    }
   }
 }
