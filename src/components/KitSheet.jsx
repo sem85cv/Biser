@@ -3,21 +3,29 @@ import { fmt, fmtUSD, costPerUnit, toUSD } from '../utils/calc.js'
 import { uploadImage } from '../utils/upload.js'
 import ItemPicker from './ItemPicker.jsx'
 
-export default function KitSheet({ open, kit, items, categories, rate, onSave, onClose }) {
+const BEAD_CATEGORY = 'bead'
+
+export default function KitSheet({ open, kit, items, categories, rate, beadsPerGram, onSave, onClose }) {
   const [name, setName] = useState('')
   const [img, setImg] = useState('')
   const [uploading, setUploading] = useState(false)
   const [components, setComponents] = useState([])
   const [pickerForIndex, setPickerForIndex] = useState(null)
 
+  const ratio = beadsPerGram > 0 ? beadsPerGram : 190
+
   useEffect(() => {
     if (open) {
       setName(kit ? kit.name : '')
       setImg(kit ? kit.img || '' : '')
       if (kit) {
-        setComponents(kit.components)
+        setComponents(kit.components.map((c) => {
+          const it = items.find((i) => i.id === c.itemId)
+          const isBead = it && it.category === BEAD_CATEGORY
+          return { ...c, beadCount: isBead && c.qty ? String(Math.round(c.qty * ratio)) : '' }
+        }))
       } else {
-        setComponents(items.length ? [{ itemId: items[0].id, qty: '' }] : [])
+        setComponents(items.length ? [{ itemId: items[0].id, qty: '', beadCount: '' }] : [])
       }
     }
   }, [open, kit, items])
@@ -29,8 +37,16 @@ export default function KitSheet({ open, kit, items, categories, rate, onSave, o
     return sum + (it ? costPerUnit(it) * (parseFloat(c.qty) || 0) : 0)
   }, 0)
 
-  function updateComponent(idx, field, value) {
-    setComponents((rows) => rows.map((r, i) => (i === idx ? { ...r, [field]: value } : r)))
+  function patchComponent(idx, patch) {
+    setComponents((rows) => rows.map((r, i) => (i === idx ? { ...r, ...patch } : r)))
+  }
+  function updateQty(idx, value) {
+    patchComponent(idx, { qty: value })
+  }
+  function updateBeadCount(idx, value) {
+    const n = parseFloat(value) || 0
+    const grams = n > 0 ? Math.ceil(n / ratio) : ''
+    patchComponent(idx, { beadCount: value, qty: grams === '' ? '' : String(grams) })
   }
   function removeComponent(idx) {
     setComponents((rows) => rows.filter((_, i) => i !== idx))
@@ -41,11 +57,11 @@ export default function KitSheet({ open, kit, items, categories, rate, onSave, o
       return
     }
     const newIdx = components.length
-    setComponents((rows) => [...rows, { itemId: items[0].id, qty: '' }])
+    setComponents((rows) => [...rows, { itemId: items[0].id, qty: '', beadCount: '' }])
     setPickerForIndex(newIdx)
   }
   function pickItem(itemId) {
-    updateComponent(pickerForIndex, 'itemId', itemId)
+    patchComponent(pickerForIndex, { itemId, qty: '', beadCount: '' })
     setPickerForIndex(null)
   }
 
@@ -90,17 +106,33 @@ export default function KitSheet({ open, kit, items, categories, rate, onSave, o
         {!items.length && <div className="row-sub">Спочатку додайте товари на склад.</div>}
         {components.map((c, idx) => {
           const it = items.find((i) => i.id === c.itemId)
+          const isBead = it && it.category === BEAD_CATEGORY
           return (
-            <div className="comp-row" key={idx}>
-              <button type="button" className="comp-picker-btn" onClick={() => setPickerForIndex(idx)}>
-                {it ? it.name : 'Оберіть товар'} <span className="chevron">▾</span>
-              </button>
-              <input
-                type="number" min="0" step="0.01" placeholder="к-сть"
-                value={c.qty}
-                onChange={(e) => updateComponent(idx, 'qty', e.target.value)}
-              />
-              <button className="icon-btn" type="button" onClick={() => removeComponent(idx)}>✕</button>
+            <div key={idx} style={{ marginBottom: 8 }}>
+              <div className="comp-row" style={{ marginBottom: isBead ? 4 : 0 }}>
+                <button type="button" className="comp-picker-btn" onClick={() => setPickerForIndex(idx)}>
+                  {it ? it.name : 'Оберіть товар'} <span className="chevron">▾</span>
+                </button>
+                {isBead ? (
+                  <input
+                    type="number" min="0" step="1" placeholder="к-сть бісеринок"
+                    value={c.beadCount}
+                    onChange={(e) => updateBeadCount(idx, e.target.value)}
+                  />
+                ) : (
+                  <input
+                    type="number" min="0" step="0.01" placeholder="к-сть"
+                    value={c.qty}
+                    onChange={(e) => updateQty(idx, e.target.value)}
+                  />
+                )}
+                <button className="icon-btn" type="button" onClick={() => removeComponent(idx)}>✕</button>
+              </div>
+              {isBead && (
+                <div className="row-sub" style={{ paddingLeft: 2 }}>
+                  ≈ {c.qty || 0} г (за {ratio} бісеринок/г, округлено вгору)
+                </div>
+              )}
             </div>
           )
         })}
