@@ -13,9 +13,9 @@ import { useSettingsDoc } from './hooks/useSettingsDoc.js'
 
 export default function App() {
   const { user, loading: authLoading, error: authError, signIn, signOut } = useAuth()
-  const { docs: items, add: addItem, update: updateItem, remove: removeItem, error: itemsError } = useFirestoreCollection('items')
-  const { docs: kits, add: addKit, update: updateKit, remove: removeKit } = useFirestoreCollection('kits')
-  const { categories, rate, save: saveSettings } = useSettingsDoc()
+  const { docs: items, add: addItem, update: updateItem, remove: removeItem, error: itemsError } = useFirestoreCollection('items', !!user)
+  const { docs: kits, add: addKit, update: updateKit, remove: removeKit } = useFirestoreCollection('kits', !!user)
+  const { categories, rate, beadsPerGram, save: saveSettings } = useSettingsDoc(!!user)
 
   const [tab, setTab] = useState('items')
 
@@ -76,7 +76,6 @@ export default function App() {
   }
 
   function saveCategories(newCategories) { saveSettings({ categories: newCategories }) }
-  function saveRate(newRate) { saveSettings({ rate: newRate }) }
 
   return (
     <div className="app">
@@ -90,9 +89,9 @@ export default function App() {
       <button className="fab" type="button" onClick={tab === 'items' ? openNewItem : openNewKit}>+</button>
 
       <ItemSheet open={itemSheetOpen} item={editingItem} categories={categories} onSave={saveItem} onClose={() => setItemSheetOpen(false)} />
-      <KitSheet open={kitSheetOpen} kit={editingKit} items={items} categories={categories} rate={rate} onSave={saveKit} onClose={() => setKitSheetOpen(false)} />
+      <KitSheet open={kitSheetOpen} kit={editingKit} items={items} categories={categories} rate={rate} beadsPerGram={beadsPerGram} onSave={saveKit} onClose={() => setKitSheetOpen(false)} />
       <SettingsSheet
-        open={settingsOpen} rate={rate} onSaveRate={saveRate}
+        open={settingsOpen} rate={rate} beadsPerGram={beadsPerGram} onSave={saveSettings}
         categories={categories} onChangeCategories={saveCategories}
         onClose={() => setSettingsOpen(false)}
       />
