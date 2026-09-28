@@ -2,12 +2,25 @@ import { useEffect, useState } from 'react'
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore'
 import { db } from '../firebase.js'
 
-export function useFirestoreCollection(name) {
+// `enabled` must be false until Firebase Auth has confirmed a signed-in user —
+// otherwise the very first snapshot attempt fires before the ID token exists,
+// Firestore rejects it as permission-denied, and (since a Firestore listener
+// stops itself after an error) it never automatically retries even once the
+// user is signed in a moment later.
+export function useFirestoreCollection(name, enabled) {
   const [docs, setDocs] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
+    if (!enabled) {
+      setDocs([])
+      setError(null)
+      setLoading(true)
+      return
+    }
+    setLoading(true)
+    setError(null)
     const unsub = onSnapshot(
       collection(db, name),
       (snap) => {
@@ -20,7 +33,7 @@ export function useFirestoreCollection(name) {
       }
     )
     return unsub
-  }, [name])
+  }, [name, enabled])
 
   async function add(data) {
     await addDoc(collection(db, name), data)
